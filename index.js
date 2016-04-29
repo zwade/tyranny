@@ -12,6 +12,7 @@ var tokens = {
 	"variable": /^[a-zA-Z$_][a-zA-Z0-9$_]*$/
 }
 
+
 //t.on("token", (token, type) => console.log(token, type))
 
 var rl = readline.createInterface({
