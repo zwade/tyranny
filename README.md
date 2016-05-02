@@ -2,11 +2,11 @@
 
 Tyranny is a node module that allows for the tokenization, parsing, and mapping of arbitrary regular, context free, and context sensitive grammars. 
 
-Tyrannyrelies on a three-stage model:
+Tyranny relies on a three-stage model:
  
- - Judge &mdash; Which judges whether an input string can be tokenized, and returns its token value if so
- - Jury &mdash; Which compares the tokenized string against a grammar, and if it is valid determines the sentence
- - Executioner &mdash; Which applies a mapping function to each sentence element based on its location in the string
+ - Judge &mdash; Judges whether an input string can be tokenized, and returns its token value if so
+ - Jury &mdash; Compares the tokenized string against a grammar, and if it is valid determines the sentence
+ - Executioner &mdash; Applies a mapping function to each sentence element based on its location in the string
 
 ## Example Usage
 
