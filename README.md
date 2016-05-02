@@ -1,6 +1,6 @@
 # Tyranny
 
-Tyranny is a node module that allows for the tokenization, parsing, and mapping of arbitrary regular, context free, and context sensitive grammars. 
+Tyranny is a node module that allows for the tokenization, parsing, and mapping of arbitrary regular, context free, and context free grammars. 
 
 Tyranny relies on a three-stage model:
  
