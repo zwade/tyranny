@@ -1,7 +1,7 @@
 {
   "name": "tyranny",
   "version": "0.2.0",
-  "description": "Tyranny is a module for tokenizing and parsing arbitrary context free grammars.",
+  "description": "Tyranny is a module for tokenizing and parsing arbitrary context sensitive grammars.",
   "main": "tyranny.js",
   "scripts": {
     "test": "node tests.js"
