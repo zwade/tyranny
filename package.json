@@ -1,18 +1,20 @@
 {
-  "name": "parser",
-  "version": "0.1.0",
-  "description": "",
-  "main": "index.js",
+  "name": "tyranny",
+  "version": "0.2.0",
+  "description": "Tyranny is a module for tokenizing and parsing arbitrary context free grammars.",
+  "main": "tyranny.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests.js"
   },
-  "author": "",
+  "author": {
+    "name": "Zachary Wade",
+    "email": "zach@dttw.tech",
+    "url": "dttw.tech"
+  },
   "license": "ISC",
   "dependencies": {
     "beautiful-log": "^1.1.4",
     "deasync": "^0.1.6",
-    "node-tokenizer": "0.0.0",
-    "tokenizer": "^1.1.2",
     "tokenizer2": "^2.0.0"
   }
 }
