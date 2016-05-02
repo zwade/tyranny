@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "beautiful-log": "^1.1.4",
+    "deasync": "^0.1.6",
     "node-tokenizer": "0.0.0",
     "tokenizer": "^1.1.2",
     "tokenizer2": "^2.0.0"

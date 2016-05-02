@@ -1,3 +1,4 @@
+//var console = require("beautiful-log")
 
 var bounds = function(exps, mincomb, maxcomb) {
 
@@ -24,9 +25,15 @@ var tok = (token) => {
 	var fn = (match) => {
 		if (inbounds(size, match) != 0) return false
 		if (match.length != 1) return false
-		if (match[0].type == token) return [match[0].src]
+		if (match[0].type == token) {
+			var delay = () => [fn.app, match[0].src]
+			delay.delayed = true
+			return [delay]
+		}
 		return false
 	}
+	fn.app = (x) => x
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "TOKEN"
 	return fn
@@ -35,18 +42,23 @@ var tok = (token) => {
 var or = (...exps) => {
 	var size = bounds(exps, Math.min, Math.max)
 	var fn = (match) => {
-		//console.log("Or", match)
+		//console.log("Or", match, exps, "\n")
 		if (inbounds(size, match) != 0) return false
 		for (var i = 0; i < exps.length; i++) {
 			var test = exps[i](match)
 			if (test) {
-				var res = test[0]
-				var tks = test[1]
-				return test
+				if (fn.app) {
+					var delay = () => [fn.app, test]
+					delay.delayed = true
+					return [delay]
+				} else {
+					return test
+				}
 			} 
 		}
 		return false
 	}
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "OR"
 	return fn
@@ -55,7 +67,7 @@ var or = (...exps) => {
 var and = (...exps) => {
 	var size = bounds(exps, (a,b) => a+b, (a,b) => a+b)
 	var fn = (match) => {
-		//console.log("And", match)
+		//console.log("And", match, exps, "\n")
 		if (inbounds(size, match) != 0) return false
 		var bind = (matches, depth) => {
 			var e = exps[depth]
@@ -73,10 +85,18 @@ var and = (...exps) => {
 			}
 			return false
 		}
-
-		return bind(match, 0)
+		var out =  bind(match, 0)
+		if (!out) return false
+		if (fn.app) {
+			var delay = () => [fn.app, out]
+			delay.delayed = true
+			return [delay]
+		} else {
+			return out
+		}
 
 	}
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "AND"
 	return fn
@@ -87,11 +107,15 @@ var group = (exp) => {
 	var fn = (match) => {
 		var res = exp(match)
 		if (res) {
-			return [res]
+			var delay = () => [fn.app, res]
+			delay.delayed = true
+			return [delay]
 		} else {
 			return false
 		}
 	}
+	fn.app = (x) => x
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "GROUP"
 	return fn
@@ -103,13 +127,14 @@ var star = (exp) => {
 		max: 1000,
 	}
 	var fn = (match) => {
+		//console.log("Star: ",match, exp, "\n")
 		var bind = (matches) => {
 			if (matches.length == 0) return []
-			for (var i = exp.size.min-1; i < Math.min(matches.length, exp.size.max); i++) {
-				var args = matches.slice(exp.size.min-1, i+1)
+			for (var i = exp.size.min; i <= Math.min(matches.length, exp.size.max); i++) {
+				var args = matches.slice(0, i)
 				var res = exp(args)
 				if (res) {
-					var rest = bind(matches.slice(i+1))
+					var rest = bind(matches.slice(i))
 					if (rest) {
 						return (res).concat(rest)
 					}
@@ -117,27 +142,59 @@ var star = (exp) => {
 			}
 			return false
 		}
-		return bind(match)
+		var out = bind(match)
+		if (!out) return false
+		if (fn.app) {
+			var delay = () => [fn.app, out]
+			delay.delayed = true
+			return [delay]
+		} else {
+			return out
+		}
 	}
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "STAR"
 	return fn
 }
 
+var stringify = function(match) {
+	var str = ""
+	if (match.length == 0) return ">EPSILON<"
+	for (var i = 0; i < match.length-1; i++) {
+		str += match[i].type + "|"
+	}
+	str += match[match.length-1].type
+	for (var i = 0; i < match.length; i++) {
+		str += match[i].src
+	}
+	return str
+}
 
 var grammar = function() {
 	this.rules = {}
+	this.memos = {}
 }
 
 grammar.prototype.register = function(rules) {
 	for (var i in rules) {
 		this.rules[i] = rules[i]
+		this.memos[i] = {}
 	}
 }
 
 grammar.prototype.call = function(i, args) {
 	if (! (i in this.rules)) return false
+	if (stringify(args) in this.memos) return this.memos[stringify(args)]
 	return this.rules[i](args)
+}
+
+grammar.prototype.callAny = function(args) {
+	for (var i in this.rules) {
+		var test = this.call(i, args)
+		if (test != false) return test
+	}
+	return false
 }
 
 grammar.prototype.expr = function (name) {
@@ -150,7 +207,17 @@ grammar.prototype.expr = function (name) {
 			max: 1000,
 		}
 	}
-	var fn = (match) => this.rules[name](match)
+	var fn = (match) => {
+		var str = stringify(match)
+		if (this.memos[str] != undefined) {
+			return this.memos[str]
+		} else {
+			this.memos[str] = false
+			var out = this.rules[name](match)
+			this.memos[str] = out
+			return out
+		}
+	}
 	fn.size = size
 	fn.idname = "EXPR"
 	return fn
@@ -161,8 +228,11 @@ module.exports = {
 	or: or,
 	and: and,
 	group: group,
+	star: star,
+	grammar: grammar,
 }
 
+/*
 var lambda = new grammar()
 lambda.register({
 	X: tok("string"),
