@@ -23,6 +23,7 @@ var inbounds = function(bounds, match) {
 var tok = (token) => {
 	size = {min: 1, max: 1}
 	var fn = (match) => {
+		//console.log("Tok", match, token)
 		if (inbounds(size, match) != 0) return false
 		if (match.length != 1) return false
 		if (match[0].type == token) {
@@ -185,7 +186,7 @@ grammar.prototype.register = function(rules) {
 
 grammar.prototype.call = function(i, args) {
 	if (! (i in this.rules)) return false
-	if (stringify(args) in this.memos) return this.memos[stringify(args)]
+	if (stringify(args) in this.memos[i]) return this.memos[i][stringify(args)]
 	return this.rules[i](args)
 }
 
@@ -208,13 +209,14 @@ grammar.prototype.expr = function (name) {
 		}
 	}
 	var fn = (match) => {
+		//console.log("Expr", name, match)
 		var str = stringify(match)
-		if (this.memos[str] != undefined) {
-			return this.memos[str]
+		if (this.memos[name][str] != undefined) {
+			return this.memos[name][str]
 		} else {
-			this.memos[str] = false
+			this.memos[name][str] = false
 			var out = this.rules[name](match)
-			this.memos[str] = out
+			this.memos[name][str] = out
 			return out
 		}
 	}

@@ -56,3 +56,35 @@ ivan.addRules({
 
 console.log(ivan.parse("+>+>+-<-<-"))
 console.log(ivan.parse("++++++[->+<]"))
+
+
+var frank = new tyrant()
+frank.addTokens({
+	"NUMBER": /^[0-9\.]+[ ]*$/,
+	"PLUS": /^\+[ ]*$/,
+	"MINUS": /^\-[ ]*$/,
+	"TIMES": /^\*[ ]*$/,
+	"DIVIDE": /^\/[ ]*$/,
+})
+
+var num = frank.compile("NUMBER").apply( parseFloat )
+var plus   = frank.compile("{E} {E} PLUS").apply(   (l) => l[0]+l[1] )
+var minus  = frank.compile("{E} {E} MINUS").apply(  (l) => l[0]-l[1] )
+var times  = frank.compile("{E} {E} TIMES").apply(  (l) => l[0]*l[1] )
+var divide = frank.compile("{E} {E} DIVIDE").apply( (l) => l[0]/l[1] )
+
+
+frank.addRules({
+	"NUM": num,
+	"PLUS": plus,
+	"MINUS": minus,
+	"TIMES": times,
+	"DIVIDE": divide,
+	"E": "{NUM}|{PLUS}|{MINUS}|{TIMES}|{DIVIDE}"
+})
+
+console.log(frank.parse("3")[0])
+console.log(frank.parse("3 2 +")[0])
+console.log(frank.parse("4 3 2 + * 5 /")[0])
+console.log(frank.parse("4 0 /")[0])
+
