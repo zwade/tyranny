@@ -34,3 +34,25 @@ nero.addRules({
 
 console.log(nero.parse('L hi.hi'))
 console.log(nero.parse('L hi.(L TEST.hi, hi)'))
+
+var ivan = new tyrant()
+ivan.addTokens({
+	"PLUS": /^\+$/,
+	"MINUS": /^\-$/,
+	"LSTART": /^\[$/,
+	"LEND": /^\]$/,
+	"INPUT": /^,$/,
+	"OUTPUT": /^\.$/,
+	"LEFT": /^\<$/,
+	"RIGHT": /^\>$/,
+})
+
+var loop = ivan.compile("LSTART ({E}) LEND").apply( (l) => l[1] )
+
+ivan.addRules({
+	"LOOP": loop,
+	"E": "[LEFT|RIGHT|OUTPUT|INPUT|PLUS|MINUS|{LOOP}]*"
+})
+
+console.log(ivan.parse("+>+>+-<-<-"))
+console.log(ivan.parse("++++++[->+<]"))
