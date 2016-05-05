@@ -1,4 +1,4 @@
-//var console = require("beautiful-log")
+var console = require("beautiful-log")
 
 var bounds = function(exps, mincomb, maxcomb) {
 
@@ -184,13 +184,15 @@ grammar.prototype.register = function(rules) {
 	}
 }
 
-grammar.prototype.call = function(i, args) {
+grammar.prototype.call = function(i, args, memoize) {
+	if (memoize != undefined) this.memoize = memoize
 	if (! (i in this.rules)) return false
 	if (stringify(args) in this.memos[i]) return this.memos[i][stringify(args)]
 	return this.rules[i](args)
 }
 
-grammar.prototype.callAny = function(args) {
+grammar.prototype.callAny = function(args, memoize) {
+	if (memoize != undefined) this.memoize = memoize
 	for (var i in this.rules) {
 		var test = this.call(i, args)
 		if (test != false) return test
@@ -211,7 +213,12 @@ grammar.prototype.expr = function (name) {
 	var fn = (match) => {
 		//console.log("Expr", name, match)
 		var str = stringify(match)
-		if (this.memos[name][str] != undefined) {
+		if (this.memos[name] == undefined) {
+			console.log("Can't Access "+name)
+			return false
+		}
+		if (this.memos[name][str] === false) return false
+		if (this.memoize != false && this.memos[name][str] != undefined) {
 			return this.memos[name][str]
 		} else {
 			this.memos[name][str] = false

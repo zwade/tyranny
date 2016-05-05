@@ -8,6 +8,12 @@ Tyranny relies on a three-stage model:
  - Jury &mdash; Compares the tokenized string against a grammar, and if it is valid determines the sentence
  - Executioner &mdash; Applies a mapping function to each sentence element based on its location in the string
 
+## Usage
+
+### `new tyranny.tyrant()`
+
+`new tyranny.tyrant()` returns a new tyrant. Each tyrant can only parse one grammar, but it can have multiple rules. Specifying a grammar requires input for each of the three steps. For Judge to tokenize a string, it needs a set of rules for tokening. This can be registered as an object whose keys are the token names, and the values are regular expressions that select each token. For Jury to determine the sentence, it needs a set of rules that are defined using a regular expression-like sentence 
+
 ## Example Usage
 
 Here is an example of creating a language to parse valid parentheses matching
