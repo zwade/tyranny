@@ -48,6 +48,8 @@ var tyrant = function() {
 	this.judy.register(tokens)
 	this.peers.register(grammars)
 
+	this.expr = (...args) => this.grand.expr(...args)
+
 }
 
 tyrant.prototype.addTokens = function(ts) {

@@ -219,14 +219,29 @@ grammar.prototype.expr = function (name) {
 		}
 		if (this.memos[name][str] === false) return false
 		if (this.memoize != false && this.memos[name][str] != undefined) {
-			return this.memos[name][str]
+			var out = this.memos[name][str]
+			if (fn.app) {
+				var delay = () => [fn.app, out]
+				delay.delayed = true
+				return [delay]
+			} else {
+				return out
+			}
 		} else {
 			this.memos[name][str] = false
 			var out = this.rules[name](match)
 			this.memos[name][str] = out
-			return out
+			if (out == false) return false
+			if (fn.app) {
+				var delay = () => [fn.app, out]
+				delay.delayed = true
+				return [delay]
+			} else {
+				return out
+			}
 		}
 	}
+	fn.apply = (f) => {fn.app = f; return fn}
 	fn.size = size
 	fn.idname = "EXPR"
 	return fn
