@@ -4,6 +4,7 @@ var eval = require("safe-eval")
 var hakkit = require("hakkit")
 var readline = require("readline-sync")
 var path = require("path")
+var deepcopy = require("deepcopy")
 
 var stalin = new tyranny.tyrant()
 stalin.addTokens({
@@ -53,6 +54,8 @@ var log = function(l) {
  *
  */
 
+/* Connector Tokens */
+
 //var wtsp        = stalin.compile("WHITESPACE*")
 var wtsp        = tyranny.star(tyranny.tok("WHITESPACE"))
                                 .apply( () => null )
@@ -69,6 +72,8 @@ var extract     = tyranny.tok("EXTRACT")
 var delim       = tyranny.tok("WHITESPACE")
                                 .apply( () => null )
 
+/* Literals & Variables */
+
 //var num         = stalin.compile("NUMBER")
 var num         = tyranny.tok("NUMBER")
                                 .apply( (d) => (env) => parseFloat(d) )
@@ -84,19 +89,32 @@ var part        = tyranny.and(stalin.expr("VARIABLE"), stalin.expr("WTSP"), tyra
 })
 //var base        = stalin.compile("VARIABLE")
 var base        = tyranny.tok("VARIABLE")
-                                .apply( (l) => (env) => env[l])
+                                .apply( (l) => (env) => {
+	var e = env
+	while (e[l] == undefined) {
+		if (e == undefined) return undefined
+		e = e._env
+	}
+	return e[l]
+})
 //var vari        = stalin.compile("{BASE}|{PART}")
 var vari        = tyranny.or(stalin.expr("BASE"), stalin.expr("PART"))
                                 .apply( (l) => (env) => l[0](env))
 //var str         = stalin.compile("STRING")
 var str         = tyranny.tok("STRING")
                                 .apply( (d) => (env) => eval(d, env) ) 
+
+/* Helpers */
+
 //var arg         = stalin.compile("{NUMBER}|{VARIABLE}|{STR}|{E}")
 var arg         = tyranny.or(stalin.expr("NUMBER"), stalin.expr("VARIABLE"), stalin.expr("STR"), stalin.expr("E"))
 //var arg_list    = stalin.compile("({ARG} [{DELIM} {ARG}]*)") 
 var arg_list    = tyranny.group(tyranny.and(stalin.expr("ARG"), tyranny.star(tyranny.and(stalin.expr("DELIM"), stalin.expr("ARG")))))
 //var args        = stalin.compile("{ARGLIST}|[{OPENPAREN} {CLOSEPAREN}]")
 var args        = tyranny.or(stalin.expr("ARGLIST"), tyranny.and(stalin.expr("OPENPAREN"), stalin.expr("CLOSEPAREN")))
+
+/* Actions */
+
 //var call        = stalin.compile("{VARIABLE} {WTSP} {ARGS}")
 var call        = tyranny.and(stalin.expr("VARIABLE"), stalin.expr("WTSP"), stalin.expr("ARGS"))
                                 .apply( (l) => (env) => {
@@ -130,6 +148,7 @@ var assign      = tyranny.and(tyranny.group(tyranny.and(tyranny.tok("VARIABLE"),
 })
 
 // Scope's broke yo
+// JK not anymore
 
 //var fun         = stalin.compile("[[{OPENPAREN} {WTSP} {CLOSEPAREN}]|[{OPENPAREN} (VARIABLE [{WTSP} VARIABLE]*) {CLOSEPAREN}]] {WTSP} {EXTRACT} {WTSP} {E}")
 var fun         = tyranny.and( tyranny.or( tyranny.and( stalin.expr("OPENPAREN"), stalin.expr("WTSP"), stalin.expr("CLOSEPAREN") ), 
@@ -137,15 +156,15 @@ var fun         = tyranny.and( tyranny.or( tyranny.and( stalin.expr("OPENPAREN")
 					                tyranny.star( tyranny.and( stalin.expr("WTSP"), tyranny.tok("VARIABLE"))))), stalin.expr("CLOSEPAREN"))),
 			       stalin.expr("WTSP"), stalin.expr("EXTRACT"), stalin.expr("WTSP"), stalin.expr("E"))
                                 .apply( (l) => (env) => {
+	var nenv = deepcopy(env)
 	var fn = (...args) => {
-		if (l.length == 1) return l[0](env)
+		thenv = {}
+		thenv._env = nenv
+		if (l.length == 1) return l[0](thenv)
 		for (var i = 0; i < l[0].length; i++) {
-			env[l[0][i]] = args[i]
+			thenv[l[0][i]] = args[i]
 		}
-		var result = l[1](env)
-		for (var i = 0; i < l[0].length; i++) {
-			env[l[0][i]] = undefined
-		}
+		var result = l[1](thenv)
 		return result
 	}
 	fn.repr = () =>  "[Function ("+ (l.length > 1 ? l[0].join(" ") : "") + ")]"
