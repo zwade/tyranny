@@ -1,10 +1,12 @@
 var console = require("beautiful-log")
+var deepcopy = require("deepcopy")
 
 var bounds = function(exps, mincomb, maxcomb) {
 
 	if (exps.length == 0) {
 		return {min: 0, max: 0}
 	}
+	if (exps[0].size == undefined) console.log(exps)
 	var min = exps[0].size.min
 	var max = exps[0].size.max
 	for (var i = 1; i < exps.length; i++) {
@@ -14,20 +16,26 @@ var bounds = function(exps, mincomb, maxcomb) {
 	return {min: min, max: max}
 }
 
-var inbounds = function(bounds, match) {
-	if (match.length < bounds.min) return -1
-	if (match.length > bounds.max) return 1
+var inbounds = function(bounds, l, u) {
+	len = u - l
+	if (len < bounds.min) return -1
+	if (len > bounds.max) return 1
 	return 0
 }
 
 var tok = (token) => {
 	size = {min: 1, max: 1}
-	var fn = (match) => {
+	var fn = (match, l, u) => {
 		//console.log("Tok", match, token)
-		if (inbounds(size, match) != 0) return false
-		if (match.length != 1) return false
-		if (match[0].type == token) {
-			var delay = () => [fn.app, match[0].src]
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
+
+		if (inbounds(size, l, u) != 0) return false
+		if ((u - l) != 1) return false
+		if (match[l].type == token) {
+			var delay = () => [fn.app, match[l].src]
 			delay.delayed = true
 			return [delay]
 		}
@@ -42,11 +50,16 @@ var tok = (token) => {
 
 var or = (...exps) => {
 	var size = bounds(exps, Math.min, Math.max)
-	var fn = (match) => {
+	var fn = (match, l, u) => {
 		//console.log("Or", match, exps, "\n")
-		if (inbounds(size, match) != 0) return false
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
+
+		if (inbounds(size, l, u) != 0) return false
 		for (var i = 0; i < exps.length; i++) {
-			var test = exps[i](match)
+			var test = exps[i](match, l, u)
 			if (test) {
 				if (fn.app) {
 					var delay = () => [fn.app, test]
@@ -67,18 +80,22 @@ var or = (...exps) => {
 
 var and = (...exps) => {
 	var size = bounds(exps, (a,b) => a+b, (a,b) => a+b)
-	var fn = (match) => {
+	var fn = (match, l, u) => {
 		//console.log("And", match, exps, "\n")
-		if (inbounds(size, match) != 0) return false
-		var bind = (matches, depth) => {
-			var e = exps[depth]
-			if (depth >= exps.length-1) return exps[depth](matches)
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
 
-			for (var i = e.size.min; i <= Math.min(matches.length, e.size.max); i++) {
-				var args = matches.slice(0,i)
-				var res = exps[depth](args) 
+		if (inbounds(size, l, u) != 0) return false
+		var bind = (l, u, depth) => {
+			var e = exps[depth]
+			if (depth >= exps.length-1) return exps[depth](match, l, u)
+
+			for (var i = e.size.min; i <= Math.min(u-l, e.size.max); i++) {
+				var res = exps[depth](match, l, l+i) 
 				if (res) {
-					var rest = bind(matches.slice(i), depth+1)
+					var rest = bind(l+i, u, depth+1)
 					if (rest) {
 						return (res).concat(rest)
 					}
@@ -86,7 +103,7 @@ var and = (...exps) => {
 			}
 			return false
 		}
-		var out =  bind(match, 0)
+		var out =  bind(l, u, 0)
 		if (!out) return false
 		if (fn.app) {
 			var delay = () => [fn.app, out]
@@ -105,8 +122,13 @@ var and = (...exps) => {
 
 var group = (exp) => {
 	var size = exp.size
-	var fn = (match) => {
-		var res = exp(match)
+	var fn = (match, l, u) => {
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
+
+		var res = exp(match, l, u)
 		if (res) {
 			var delay = () => [fn.app, res]
 			delay.delayed = true
@@ -122,20 +144,25 @@ var group = (exp) => {
 	return fn
 }
 
+
 var star = (exp) => {
 	var size = {
 		min: 0,
 		max: 1000,
 	}
-	var fn = (match) => {
+	var fn = (match, l, u) => {
 		//console.log("Star: ",match, exp, "\n")
-		var bind = (matches) => {
-			if (matches.length == 0) return []
-			for (var i = exp.size.min; i <= Math.min(matches.length, exp.size.max); i++) {
-				var args = matches.slice(0, i)
-				var res = exp(args)
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
+
+		var bind = (l, u) => {
+			if ((u - l) == 0) return []
+			for (var i = exp.size.min; i <= Math.min(u-l, exp.size.max); i++) {
+				var res = exp(match, l, l+i)
 				if (res) {
-					var rest = bind(matches.slice(i))
+					var rest = bind(l+i, u)
 					if (rest) {
 						return (res).concat(rest)
 					}
@@ -143,7 +170,7 @@ var star = (exp) => {
 			}
 			return false
 		}
-		var out = bind(match)
+		var out = bind(l, u)
 		if (!out) return false
 		if (fn.app) {
 			var delay = () => [fn.app, out]
@@ -188,7 +215,7 @@ grammar.prototype.call = function(i, args, memoize) {
 	if (memoize != undefined) this.memoize = memoize
 	if (! (i in this.rules)) return false
 	if (stringify(args) in this.memos[i]) return this.memos[i][stringify(args)]
-	return this.rules[i](args)
+	return this.rules[i](args, 0, args.length)
 }
 
 grammar.prototype.callAny = function(args, memoize) {
@@ -210,9 +237,14 @@ grammar.prototype.expr = function (name) {
 			max: 1000,
 		}
 	}
-	var fn = (match) => {
+	var fn = (match, l, u) => {
 		//console.log("Expr", name, match)
-		var str = stringify(match)
+		if (l > match.length) return false
+		if (u > match.length) return false
+		if (l < 0) return false
+		if (u < l) return false
+
+		var str = stringify(match.slice(l,u))
 		if (this.memos[name] == undefined) {
 			console.log("Can't Access "+name)
 			return false
@@ -229,7 +261,7 @@ grammar.prototype.expr = function (name) {
 			}
 		} else {
 			this.memos[name][str] = false
-			var out = this.rules[name](match)
+			var out = this.rules[name](match, l, u)
 			this.memos[name][str] = out
 			if (out == false) return false
 			if (fn.app) {
@@ -272,12 +304,14 @@ console.log(lambda.call("E",
 	[{type: "L", src: "L"}, {type: "string", src: "hi there"}, {type: ".", src: "."},
 	{type: "(", src: "("}, {type: "string", src: "inner"}, {type: "string", src: "string"}, {type: ")", src: ")"}]))
 
-/*
 var t = new grammar()
 
 var world = group(or(tok("hello"), and(tok("w"),tok("o"), tok("rld"))))
-var res = or(tok("hi"),and(tok("there"), star(world), tok("!"), t.expr("BOO")))
-t.register({res: res})
+var fn = or(tok("hi"),and(tok("there"), star(world), tok("!"), t.expr("BOO")))
+var res = function(e) {
+	fn(e, 0, e.length)
+}
+t.register({res: fn})
 console.log(t.call("res", [{type: "there", src: "result"},{type: "w", src: "is"},{type: "o", src: "it"},{type: "rld", src: "work"},{type:"!", src: "!!!"}]))
 
 console.log(res([{type: "hi", src: "first!"}]))

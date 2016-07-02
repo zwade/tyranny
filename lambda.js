@@ -94,6 +94,7 @@ var base        = tyranny.tok("VARIABLE")
 	while (e[l] == undefined) {
 		if (e == undefined) return undefined
 		e = e._env
+		if (e == undefined) return undefined
 	}
 	return e[l]
 })
@@ -191,7 +192,6 @@ stalin.addRules({
 
 	E: "{CALL}|{ASG}|{ARG}|{FUN}|[{OPENPAREN} {WTSP} {E} {WTSP} {CLOSEPAREN}]"
 })
-
 
 while (true) {
 	var out = stalin.parse(readline.question("$ "), "E")

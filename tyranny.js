@@ -2,6 +2,7 @@ var readline = require("readline")
 var judge = require("./judge")
 var jury = require("./jury")
 var executer = require("./executioner")
+var deepcopy = require("deepcopy")
 
 var judy = new judge()
 var peers = new jury.grammar()
@@ -58,7 +59,12 @@ tyrant.prototype.addTokens = function(ts) {
 
 tyrant.prototype.compile = function(str) {
 	var d = this.judy.parse(str)
-	return executer(this.peers.call("E", d, false))[0]
+	var out = executer(this.peers.call("E", d))
+	if (out == false) {
+		console.error("Compilation Error on ",str)
+		return false
+	}
+	return out[0]
 }
 
 tyrant.prototype.addRules = function(rules) {
