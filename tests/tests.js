@@ -1,4 +1,4 @@
-var tyrant = require("./tyranny").tyrant
+var tyrant = require("../tyranny").tyrant
 var console = require("beautiful-log")
 
 var george = new tyrant()
@@ -72,7 +72,6 @@ var plus   = frank.compile("{E} {E} PLUS").apply(   (l) => l[0]+l[1] )
 var minus  = frank.compile("{E} {E} MINUS").apply(  (l) => l[0]-l[1] )
 var times  = frank.compile("{E} {E} TIMES").apply(  (l) => l[0]*l[1] )
 var divide = frank.compile("{E} {E} DIVIDE").apply( (l) => l[0]/l[1] )
-
 
 frank.addRules({
 	"NUM": num,
