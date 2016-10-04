@@ -1,7 +1,7 @@
 var readline = require("readline")
-var judge = require("./judge")
-var jury = require("./jury")
-var executer = require("./executioner")
+var judge = require("./government/judge")
+var jury = require("./government/jury")
+var executer = require("./government/executioner")
 
 var judy = new judge()
 var peers = new jury.grammar()
@@ -13,7 +13,8 @@ var tok = jury.tok
 var none = jury.none 
 var group = jury.group
 
-var tyrant = function() {
+var tyrant = function(debug = false) {
+	this.debug = debug
 	this.judy = new judge()
 	this.peers = new jury.grammar()
 
@@ -78,21 +79,39 @@ tyrant.prototype.addRules = function(rules) {
 }
 
 tyrant.prototype.parse = function(str, rule) {
-	let now = Date.now()
-	var d = this.joebrown.parse(str)
-	console.log(`Lex Time: ${Date.now()-now}`)
-	if (d === null) throw new SyntaxError("Invalid Syntax")
-	if (rule != undefined) {
-		now = Date.now()
-		let grammar = this.grand.call(rule, d)
-		console.log(`Grammar Parse Time: ${Date.now()-now}`)
-		console.log(`Counts: ${this.grand.count}`)
-		now = Date.now()
-		let result =  executer(grammar)
-		console.log(`Execution Time: ${Date.now()-now}`)
-		return result
+	if (this.debug) {
+		let now = Date.now()
+		var d = this.joebrown.parse(str)
+		console.log(`Lex Time: ${Date.now()-now}`)
+		if (d === null) throw new SyntaxError("Invalid Syntax")
+		if (rule != undefined) {
+			now = Date.now()
+			let grammar = this.grand.call(rule, d)
+			console.log(`Grammar Parse Time: ${Date.now()-now}`)
+			console.log(`Counts: ${this.grand.count}`)
+			now = Date.now()
+			let result =  executer(grammar)
+			console.log(`Execution Time: ${Date.now()-now}`)
+			return result
+		} else {
+			now = Date.now()
+			let grammar = this.grand.callAny(d)
+			console.log(`Grammar Parse Time: ${Date.now()-now}`)
+			console.log(`Counts: ${this.grand.count}`)
+			now = Date.now()
+			let result = executer(grammar)
+			console.log(`Execution Time: ${Date.now()-now}`)
+			return result
+		}
 	} else {
-		return executer(this.grand.callAny(d))
+		var d = this.joebrown.parse(str)
+		if (d === null) throw new SyntaxError("Invalid Syntax")
+		if (rule != undefined) {
+			let grammar = this.grand.call(rule, d)
+			return executer(grammar)
+		} else {
+			return executer(this.grand.callAny(d))
+		}
 	}
 }
 

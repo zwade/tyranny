@@ -4,7 +4,7 @@
   "description": "Tyranny is a module for tokenizing and parsing arbitrary context free grammars.",
   "main": "tyranny.js",
   "scripts": {
-    "test": "node tests.js"
+    "test": "node tests/tests.js"
   },
   "author": {
     "name": "Zachary Wade",
@@ -13,6 +13,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "beautiful-log": "^1.1.4",
+    "beautiful-log": "^1.1.4"
   }
 }

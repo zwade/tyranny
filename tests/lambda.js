@@ -1,6 +1,12 @@
-var tyranny = require("./tyranny")
-//var console = require("beautiful-log")
-var readline = require("readline-sync")
+var tyranny = require("../tyranny")
+var console = require("beautiful-log")
+
+try {
+	var readline = require("readline-sync")
+} catch (e) {
+	console.error("Please run `npm install readline-sync` to run this test")
+	process.exit(0)
+}
 
 var stalin = new tyranny.tyrant()
 stalin.addTokens({
