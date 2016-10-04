@@ -1,37 +1,56 @@
-var tokenizer = require("tokenizer2")
-var readline = require("readline")
-var deasync = require("deasync")
-
-var judge = function() {
-	this.tokens = {}
-}
-
-judge.prototype.register = function(tokens) {
-	for (var i in tokens) {
-		this.tokens[i] = tokens[i]
+class tokenizer {
+	constructor (tokens = {}) {
+		this.tokens = tokens
+		this.memoization = new Map()
+	}
+	tokenizeRecursively(string) {
+		if (string.length == 0) {
+			return []
+		}
+		if (this.memoization.has(string)) {
+			return this.memoization.get(string)
+		}
+		for (let i = string.length; i >= 0; i--) {
+			let testStr = string.slice(0, i)
+			let remainder = string.slice(i)
+			for (let token in this.tokens) {
+				let match = this.tokens[token].exec(testStr)
+				if (match) {
+					try {
+						let recurse = this.tokenizeRecursively(remainder)
+						let duped = recurse.slice()
+						duped.push({src:match[0], type:token})
+						this.memoization.set(string, duped)
+						return duped
+					} catch (e) {
+						if (e instanceof RangeError) {
+							continue
+						} else {
+							throw e
+						}
+					}
+				}
+			}
+		}
+		throw new RangeError
+	}
+	parse(string) {
+		try {
+			let result = this.tokenizeRecursively(string)
+			return result.reverse()
+		} catch (e) {
+			if (e instanceof RangeError) {
+				return null
+			} else {
+				throw e
+			}
+		}
+	}
+	register(tokens) {
+		for (let token in tokens) {
+			this.tokens[token] = tokens[token]
+		}
 	}
 }
 
-judge.prototype.parse = function (string) {
-		var t = new tokenizer()
-		var that = this
-		this.data = []
-		for (var i in this.tokens) {
-			t.addRule(this.tokens[i], i)	
-		}
-		var p = function(cb) {
-			
-			t.on("data", (data) => that.data.push(data))
-			t.on("end", () => cb(null, that.data))
-		}
-		t.write(string)
-		try {
-			t.end()
-		} catch (e) {
-			console.error("Syntax Error")
-			return []
-		}
-		return deasync(p)()
-}
-
-module.exports = judge
+module.exports = tokenizer

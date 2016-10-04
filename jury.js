@@ -1,4 +1,4 @@
-var console = require("beautiful-log")
+//var console = require("beautiful-log")
 
 var bounds = function(exps, mincomb, maxcomb) {
 
@@ -159,6 +159,27 @@ var star = (exp) => {
 	return fn
 }
 
+var none = () => {
+	var size = {
+		min: 0,
+		max: 0,
+	}
+	var fn = (match) => {
+		if (match.length == 0) {
+			var delay = () => [fn.app, [1]]
+			delay.delayed = true
+			return [delay]
+		} else {
+			return false
+		}
+	}
+	fn.app = () => null
+	fn.apply = (f) => {fn.app = f; return fn}
+	fn.size = size
+	fn.idname = "NONE"
+	return fn
+}
+
 var stringify = function(match) {
 	var str = ""
 	if (match.length == 0) return ">EPSILON<"
@@ -173,6 +194,7 @@ var stringify = function(match) {
 }
 
 var grammar = function() {
+	this.count = 0
 	this.rules = {}
 	this.memos = {}
 }
@@ -180,19 +202,24 @@ var grammar = function() {
 grammar.prototype.register = function(rules) {
 	for (var i in rules) {
 		this.rules[i] = rules[i]
-		this.memos[i] = {}
+		this.memos[i] = new Map()
 	}
 }
 
 grammar.prototype.call = function(i, args, memoize) {
 	if (memoize != undefined) this.memoize = memoize
 	if (! (i in this.rules)) return false
-	if (stringify(args) in this.memos[i]) return this.memos[i][stringify(args)]
+
+	let stringed = stringify(args)
+	if (this.memos[i].has(stringed)) {
+		return this.memos[i].get(stringed)
+	}
 	return this.rules[i](args)
 }
 
 grammar.prototype.callAny = function(args, memoize) {
 	if (memoize != undefined) this.memoize = memoize
+
 	for (var i in this.rules) {
 		var test = this.call(i, args)
 		if (test != false) return test
@@ -212,18 +239,19 @@ grammar.prototype.expr = function (name) {
 	}
 	var fn = (match) => {
 		//console.log("Expr", name, match)
+		this.count++
 		var str = stringify(match)
 		if (this.memos[name] == undefined) {
 			console.log("Can't Access "+name)
 			return false
 		}
-		if (this.memos[name][str] === false) return false
-		if (this.memoize != false && this.memos[name][str] != undefined) {
-			return this.memos[name][str]
+		if (this.memos[name].get(str) === false) return false
+		if (this.memoize != false && this.memos[name].get(str) != undefined) {
+			return this.memos[name].get(str)
 		} else {
-			this.memos[name][str] = false
+			this.memos[name].set(str, false)
 			var out = this.rules[name](match)
-			this.memos[name][str] = out
+			this.memos[name].set(str, out)
 			return out
 		}
 	}
@@ -239,6 +267,7 @@ module.exports = {
 	group: group,
 	star: star,
 	grammar: grammar,
+	none: none,
 }
 
 /*
