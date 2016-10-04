@@ -12,6 +12,9 @@
     "url": "dttw.tech"
   },
   "license": "ISC",
+  "engines": {
+    "node": ">=6.0.0"
+  },
   "dependencies": {
     "beautiful-log": "^1.1.4",
   }
