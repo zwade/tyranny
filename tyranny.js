@@ -10,6 +10,7 @@ var or = jury.or
 var and = jury.and
 var star = jury.star
 var tok = jury.tok
+var none = jury.none 
 var group = jury.group
 
 var tyrant = function() {
@@ -30,7 +31,10 @@ var tyrant = function() {
 		openBracket: /^\[$/,
 		closeBracket: /^\]$/,
 		openBrace: /^\{$/,
-		closeBrace: /^\}$/
+		closeBrace: /^\}$/,
+	        question: /^\?$/,
+		falsey: /^\&NONE$/,
+		plus: /^\+$/,
 	}
 
 	var alternation = and( this.peers.expr("E"), tok("alternate"), this.peers.expr("E") ).apply( (l) => or(l[0],l[2]) ) 
@@ -40,9 +44,12 @@ var tyrant = function() {
 	var tokn = tok("token").apply( (t) => tok(t))
 	var grp = and( tok("openParen"), this.peers.expr("E"), tok("closeParen") ).apply( (l) => group(l[1]) )
 	var lg = and( tok("openBracket"), this.peers.expr("E"), tok("closeBracket") ).apply( (l) => l[1] )
+	var empty = tok("falsey").apply( (_) => none())
+	var maybe = and( this.peers.expr("E"), tok("question") ).apply( (l) => or(none(), l[0]) )
+	var atleast = and( this.peers.expr("E"), tok("plus") ).apply( (l) => and(l[0], star(l[0])) )
 
 	var grammars = {
-		E: or(tokn, grp, alternation, concat, starv, expr, lg)
+		E: or(tokn, grp, alternation, concat, starv, expr, lg, empty, maybe, atleast)
 	}
 
 	this.judy.register(tokens)
@@ -56,7 +63,10 @@ tyrant.prototype.addTokens = function(ts) {
 
 tyrant.prototype.compile = function(str) {
 	var d = this.judy.parse(str)
-	return executer(this.peers.call("E", d, false))[0]
+	if (d === null) throw new SyntaxError("Invalid Grammar Description")
+	let grammar = this.peers.call("E", d, false)
+	let ded = executer(grammar)[0]
+	return ded
 }
 
 tyrant.prototype.addRules = function(rules) {
@@ -68,9 +78,19 @@ tyrant.prototype.addRules = function(rules) {
 }
 
 tyrant.prototype.parse = function(str, rule) {
+	let now = Date.now()
 	var d = this.joebrown.parse(str)
+	console.log(`Lex Time: ${Date.now()-now}`)
+	if (d === null) throw new SyntaxError("Invalid Syntax")
 	if (rule != undefined) {
-		return executer(this.grand.call(rule, d))
+		now = Date.now()
+		let grammar = this.grand.call(rule, d)
+		console.log(`Grammar Parse Time: ${Date.now()-now}`)
+		console.log(`Counts: ${this.grand.count}`)
+		now = Date.now()
+		let result =  executer(grammar)
+		console.log(`Execution Time: ${Date.now()-now}`)
+		return result
 	} else {
 		return executer(this.grand.callAny(d))
 	}

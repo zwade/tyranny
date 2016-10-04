@@ -88,3 +88,19 @@ console.log(frank.parse("3 2 +")[0])
 console.log(frank.parse("4 3 2 + * 5 /")[0])
 console.log(frank.parse("4 0 /")[0])
 
+var kimmy = new tyrant()
+kimmy.addTokens({
+	"EYES": /^:$/,
+	"NOSE": /^~$/,
+	"MOUTH": /^D$/,
+})
+
+kimmy.addRules({
+	"E": "EYES NOSE? MOUTH",
+})
+
+console.log(kimmy.parse(":~D"))
+console.log(kimmy.parse(":D"))
+console.log(kimmy.parse("~D"))
+console.log(kimmy.parse(":~"))
+console.log(kimmy.parse(":~~D"))
