@@ -17,7 +17,11 @@ class tokenizer {
 				let match = this.tokens[token].exec(testStr)
 				if (match) {
 					try {
+						this.memoization.set(string, null)
 						let recurse = this.tokenizeRecursively(remainder)
+						this.memoization.delete(string)
+						if (recurse === null) continue
+
 						let duped = recurse.slice()
 						duped.push({src:match[0], type:token})
 						this.memoization.set(string, duped)
