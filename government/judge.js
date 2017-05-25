@@ -42,7 +42,7 @@ class tokenizer {
 		try {
 			let result = this.tokenizeRecursively(string)
 			let reversed = []
-			for (let i = reversed.length; i > 0; i--) {
+			for (let i = result.length; i > 0; i--) {
 				reversed.push(result[i-1])
 			}
 			return reversed
