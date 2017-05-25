@@ -41,7 +41,11 @@ class tokenizer {
 	parse(string) {
 		try {
 			let result = this.tokenizeRecursively(string)
-			return result.reverse()
+			let reversed = []
+			for (let i = reversed.length; i > 0; i--) {
+				reversed.push(result[i-1])
+			}
+			return reversed
 		} catch (e) {
 			if (e instanceof RangeError) {
 				return null
